@@ -39,7 +39,7 @@ jobs:
           node-version: '22.23.4'
           package-manager-cache: false
 
-      - name: Resolve one shared test dependency lock without lifecycle scripts
+      - name: Verify the retained first-run dependency lock without lifecycle scripts
         id: lock
         working-directory: orqelon-lab/hhs355
         run: |
@@ -49,7 +49,8 @@ jobs:
             node --version
             npm --version
             printf 'Harness commit: %s\n' "$GITHUB_SHA"
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            printf '%s  package-lock.json\n' '516ca0b9c3bdc685c9abb9a693ab3279685243c69bb79653109ec59a2859e131' | sha256sum -c -
+            npm ci --ignore-scripts --no-audit --no-fund
             sha256sum package.json package-lock.json
           } 2>&1 | tee "$GITHUB_WORKSPACE/evidence/prepare-lock.log"
           printf 'sha256=%s\n' "$(sha256sum package-lock.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
@@ -271,6 +272,7 @@ jobs:
         timeout-minutes: 8
         env:
           PRODUCT_ROLE: ${{ matrix.role }}
+          DEBUG: guidepup:VoiceOverClient,guidepup:osascript,guidepup:activate
         run: |
           set -euo pipefail
           node orqelon-lab/hhs355/run.mjs \

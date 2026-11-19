@@ -1,0 +1,66 @@
+{
+  "schema": "HHS355_HARNESS_REVISION_V2",
+  "preparedAtUTC": "2026-11-19T01:22:52.034864+00:00",
+  "priorWorkflowCommit": "990c3fee0caede9b75a589ed421f8c9613f91ab0",
+  "priorRun": "https://github.com/ahcrm-core/simpler-grants-protocol/actions/runs/44435363600",
+  "baselineV1": "Preflight URL entry exceeded25000ms; sevenNOT_RUN; no product FIRSTRED",
+  "candidateV1": {
+    "cases": [
+      "PASS",
+      "PASS",
+      "UNVERIFIED",
+      "FAIL",
+      "ERROR",
+      "ERROR",
+      "ERROR"
+    ],
+    "recording": "Real MOV/H264 and AAC present;56.021667seconds; non-silent signal measured; utterances not independently verified",
+    "movieSHA256": "d6dac1174f837f9d55fe7e6af50c0559a6924ba38aa18d23b7ba799f004c2ab7"
+  },
+  "corrections": [
+    "Native key target Safari made explicit",
+    "VO-F4 uses native Safari-targeted press instead of perform that activates VoiceOver",
+    "Read-only foreground process and document.hasFocus recorded around measurements",
+    "URL preflight budget90s with duration recorded; no per-character app activation",
+    "Exact first-run test dependency lock committed and verified"
+  ],
+  "unchanged": [
+    "Both product commits",
+    "Acceptance V1 bytes and seven semantic cases",
+    "Initial Option+Tab",
+    "15000ms minimum settling",
+    "Forty native navigation keys per target",
+    "No DOM focus/value/event manipulation",
+    "Independent media verification gates"
+  ],
+  "sourceReferences": [
+    "https://github.com/guidepup/guidepup/blob/0.40.0/src/macOS/VoiceOver/VoiceOverKeyboard.ts",
+    "https://github.com/guidepup/guidepup/blob/0.40.0/src/macOS/sendKeys/sendKeys.ts",
+    "https://github.com/guidepup/guidepup/blob/0.40.0/src/macOS/activate.ts"
+  ],
+  "staticChecks": [
+    "Node syntax passed",
+    "YAML parse passed",
+    "Acceptance hash unchanged",
+    "Independent focused target correction review found no concrete blocker"
+  ],
+  "changedFiles": [
+    {
+      "path": "orqelon-lab/hhs355/run.mjs",
+      "sha256": "858e72c090e3012ed90f1d3312801fc7d5bce8bd7f8c8d50e5541d98fdda0f10"
+    },
+    {
+      "path": "orqelon-lab/hhs355/README.md",
+      "sha256": "ed98c2b08996d4212b1544da5b4898fdee987cc5a397338667d67c7d476cfa65"
+    },
+    {
+      "path": "orqelon-lab/hhs355/package-lock.json",
+      "sha256": "516ca0b9c3bdc685c9abb9a693ab3279685243c69bb79653109ec59a2859e131"
+    },
+    {
+      "path": ".github/workflows/orqelon-voiceover-hhs355.yml",
+      "sha256": "545657104e2b800ca8697939abeee0936d169aa5c2b2e908bb3158c7a5ec47e2"
+    }
+  ],
+  "nativeV2": "NOT_RUN"
+}

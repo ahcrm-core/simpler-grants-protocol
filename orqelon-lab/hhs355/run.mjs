@@ -95,6 +95,7 @@ const DOM_READ = `JSON.stringify((() => {
   const text = element => element?.textContent?.trim() || '';
   return {
     atBrowserUTC: new Date().toISOString(), url: location.href, readyState: document.readyState,
+    documentHasFocus: document.hasFocus(),
     title: document.title, viewportHeight: innerHeight, viewportWidth: innerWidth,
     activeTag: active?.tagName, activeId: active?.id, activeText: text(active).slice(0,200),
     activeInMain: !!active?.closest('main'), skipCount: document.querySelectorAll('a.sl-skip-link').length,
@@ -127,6 +128,7 @@ async function snapshot(label) {
   checkRecorder();
   const script = 'on run argv\n tell application "Safari" to do JavaScript (item 1 of argv) in document 1\nend run';
   const observed = JSON.parse(await command('/usr/bin/osascript', ['-e', script, DOM_READ]));
+  observed.frontmostProcess = await optionalCommand('/usr/bin/osascript', ['-e', 'tell application "System Events" to get name of first application process whose frontmost is true']);
   event('dom-observation', { label, observed });
   return observed;
 }
@@ -139,17 +141,21 @@ async function screen(label) {
 async function key(value) {
   checkRecorder();
   event('native-key-start', { key: value });
-  await bounded(voiceOver.press(value, { capture: false }), 20_000, `Native key ${value}`);
+  await bounded(voiceOver.press(value, { application: MacOSApplications.Safari, capture: false }), 20_000, `Native key ${value}`);
   event('native-key-end', { key: value });
 }
 async function freshSpeech(label) {
   checkRecorder();
+  const beforeFocus = await snapshot(`${label}-before-vo-f4`);
   const before = (await voiceOver.spokenPhraseLog()).length;
   const checkpoint = event('vo-f4-start', { label, logOffset: before });
-  await bounded(voiceOver.perform(voiceOver.keyboardCommands.describeItemWithKeyboardFocus, { capture: true }), 25_000, `VO-F4 ${label}`);
+  // In Guidepup 0.40.0 perform() activates VoiceOver itself. Send the same
+  // native VO-F4 chord to Safari so measurement does not steal app focus.
+  await bounded(voiceOver.press('Control+Option+F4', { application: MacOSApplications.Safari, capture: true }), 25_000, `VO-F4 ${label}`);
   const log = await voiceOver.spokenPhraseLog();
   const phrases = log.slice(before);
-  const result = { label, startedAtUTC: checkpoint.atUTC, logOffset: before, logEnd: log.length, phrases, freshEvent: phrases.length > 0 };
+  const afterFocus = await snapshot(`${label}-after-vo-f4`);
+  const result = { label, startedAtUTC: checkpoint.atUTC, logOffset: before, logEnd: log.length, phrases, freshEvent: phrases.length > 0, hasNonEmptyCapture:phrases.some(s=>s.trim().length>0), beforeFocus, afterFocus };
   json('spoken-phrases.json', log);
   event('vo-f4-end', result);
   return result;
@@ -287,7 +293,10 @@ async function run() {
   await bounded(guidepup.macOSActivate(MacOSApplications.Safari), 25_000, 'Safari activation');
   // Normal native address-bar navigation, before the frozen test sequence.
   await key('Command+l');
-  await bounded(voiceOver.type(url, { capture: false }), 25_000, 'URL entry');
+  const urlEntryStarted = performance.now();
+  event('native-url-entry-start', { length:url.length });
+  await bounded(voiceOver.type(url, { capture: false }), 90_000, 'URL entry');
+  event('native-url-entry-end', { durationMs:performance.now()-urlEntryStarted });
   await key('Enter');
   await waitFor('initial-page-readiness-and-AppleEvents-preflight', s => readyFor(s, '0.5.0'), 30_000);
   await screen('preflight');
@@ -316,7 +325,7 @@ async function cases() {
   await isolatedCase('VO355-01', async () => {
     const state = await navigateTo('skip', 'skipFocused', INITIAL_KEY);
     const frame = await screen('VO355-01-skip');
-    caseResult('VO355-01', { state, frame }, { uniqueSkip: state.skipCount===1, focused: state.skipFocused, visible: state.skipVisible });
+    caseResult('VO355-01', { state, frame }, { uniqueSkip: state.skipCount===1, focused: state.skipFocused, documentFocused:state.documentHasFocus, visible: state.skipVisible });
   });
   await isolatedCase('VO355-02', async () => {
     const before = await snapshot('before-skip-enter');
@@ -325,7 +334,7 @@ async function cases() {
     const state = await snapshot('immediate-heading');
     const speech = await freshSpeech('immediate-heading');
     const frame = await screen('VO355-02-heading');
-    caseResult('VO355-02', { state, speech, frame }, { focusedHeading:state.headingFocused, insideMain:state.headingInMain }, speechCheck(speech, 'heading'));
+    caseResult('VO355-02', { state, speech, frame }, { focusedHeading:state.headingFocused, documentFocused:state.documentHasFocus, insideMain:state.headingInMain }, speechCheck(speech, 'heading'));
   });
   await isolatedCase('VO355-03', async () => {
     if (!activated) throw new Error('Skip activation did not execute; no settled-focus claim');
@@ -339,25 +348,25 @@ async function cases() {
     const frame = await screen('VO355-03-settled');
     const rect = state.headingRect;
     caseResult('VO355-03', { state, speech, frame, elapsedMs }, {
-      waited15Seconds:elapsedMs>=15_000, focusedHeading:state.headingFocused, insideMain:state.headingInMain,
+      waited15Seconds:elapsedMs>=15_000, focusedHeading:state.headingFocused, documentFocused:state.documentHasFocus, insideMain:state.headingInMain,
       visibleBelowHeader:!!rect && rect.height>0 && rect.top>=(state.headerRect?.bottom||0)-1 && rect.bottom<=state.viewportHeight,
     }, speechCheck(speech, 'heading'));
   });
   await isolatedCase('VO355-04', async () => {
     if (!activated) throw new Error('No skip activation; dependent next Tab cannot be claimed');
     const before = await snapshot('before-next-ordinary-tab');
-    if (!before.headingFocused || !before.headingInMain) throw new Error('The heading no longer has keyboard focus; cannot claim the heading-to-next-Tab transition');
+    if (!before.headingFocused || !before.headingInMain || !before.documentHasFocus) throw new Error('The heading/page no longer has keyboard focus; cannot claim the heading-to-next-Tab transition');
     await key('Tab');
     const state = await snapshot('next-ordinary-tab');
     const speech = await freshSpeech('next-ordinary-tab');
     const frame = await screen('VO355-04-version');
-    caseResult('VO355-04', { before, state, speech, frame }, { focusedVersion:state.versionFocused, insideMain:state.activeInMain, version:state.versionValue==='0.5.0' }, speechCheck(speech, 'version', '0.5.0'));
+    caseResult('VO355-04', { before, state, speech, frame }, { focusedVersion:state.versionFocused, documentFocused:state.documentHasFocus, insideMain:state.activeInMain, version:state.versionValue==='0.5.0' }, speechCheck(speech, 'version', '0.5.0'));
   });
   await isolatedCase('VO355-05', async () => {
     const state = await navigateTo('server-0.5.0', 'serverFocused', INITIAL_KEY);
     const speech = await freshSpeech('server-0.5.0');
     const frame = await screen('VO355-05-server');
-    caseResult('VO355-05', { state, speech, frame }, { focused:state.serverFocused, unique:state.serverCount===1, value:state.serverValue==='/api/v0.5.0' }, speechCheck(speech, 'server', '0.5.0'));
+    caseResult('VO355-05', { state, speech, frame }, { focused:state.serverFocused, documentFocused:state.documentHasFocus, unique:state.serverCount===1, value:state.serverValue==='/api/v0.5.0' }, speechCheck(speech, 'server', '0.5.0'));
   });
   await isolatedCase('VO355-06', async () => {
     await navigateTo('api-version-before-change', 'versionFocused', 'Shift+Tab');
@@ -370,7 +379,7 @@ async function cases() {
     const state = await navigateTo('server-0.4.0', 'serverFocused', INITIAL_KEY);
     const speech = await freshSpeech('server-0.4.0');
     const frame = await screen('VO355-07-server-redraw');
-    caseResult('VO355-07', { state, speech, frame }, { focused:state.serverFocused, unique:state.serverCount===1, value:state.serverValue==='/api/v0.4.0' }, speechCheck(speech, 'server', '0.4.0'));
+    caseResult('VO355-07', { state, speech, frame }, { focused:state.serverFocused, documentFocused:state.documentHasFocus, unique:state.serverCount===1, value:state.serverValue==='/api/v0.4.0' }, speechCheck(speech, 'server', '0.4.0'));
   });
 }
 

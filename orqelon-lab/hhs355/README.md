@@ -37,11 +37,33 @@ The optional `workflow_dispatch` entry is not evidence that GitHub has registere
 the workflow on the default branch. No default-branch merge is required for a
 push-triggered run.
 
-One Linux job resolves the exact test-package pins into one npm lockfile. Both
-macOS jobs consume that same artifact with `npm ci --ignore-scripts`. The first
-run's transitive dependency resolution is therefore an observed input, not a
-claim that every transitive version was chosen earlier. Preserve its lock hash
-and file with the results.
+The first run resolved the exact test-package pins into one npm lockfile. That
+actual lock is now committed and verified by hash; one Linux job installs it and
+uploads it unchanged. Both macOS jobs consume the same artifact with
+`npm ci --ignore-scripts`. The first run's transitive resolution is an observed
+input, not a claim that every transitive version was chosen earlier.
+
+## Disclosed harness correction after run 1
+
+[Run 44435363600](https://github.com/ahcrm-core/simpler-grants-protocol/actions/runs/44435363600)
+is retained unchanged. Baseline timed out during per-character URL entry and
+ran none of the seven cases. Candidate reached the real recording and first
+two cases, then recorded an empty settled speech capture and failed later
+navigation. These are incomplete results, not baseline FIRST RED or acceptance.
+
+Tagged Guidepup 0.40.0 source shows that `perform()` activates VoiceOver before
+its command, while `press()` can target Safari explicitly. The original harness
+used `perform()` for VO-F4, followed by untargeted native keys. That measurement
+side effect is consistent with navigation stalling after the first capture;
+it is not enough evidence to call the stall a product regression.
+
+Revision V2 sends the same native `Control+Option+F4` chord to Safari, targets
+other native keys to Safari, and records the foreground process plus
+`document.hasFocus()` around captures. It also extends only the URL-entry
+preflight budget from 25 to 90 seconds, recording its measured duration. The
+product refs, seven acceptance criteria, initial Option+Tab policy, 15-second
+settle interval, native-only interaction, navigation bounds, and media gates
+remain unchanged. No old run or empty phrase is reclassified as passing.
 
 The macOS job uses Guidepup's documented CI setup to configure screen-reader
 automation on its ephemeral runner. That vendor setup can update TCC permissions.

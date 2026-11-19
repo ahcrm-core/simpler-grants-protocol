@@ -86,6 +86,34 @@ V3 does not supply earlier words, another VoiceOver command's words, or synthesi
 speech to satisfy a missing F4 report. The settling-end event now stores the wait
 duration as `waitElapsedMs`, preserving the separate session-relative `elapsedMs`.
 
+## Disclosed reporting variation after run 3
+
+[Run 44438496732](https://github.com/ahcrm-core/simpler-grants-protocol/actions/runs/44438496732)
+retains candidate PASS results for cases 01, 02, 04, 05, 06 and 07. Version change
+and the redrawn Server report therefore completed under V3. Case 03 still had
+no fresh usable F4 phrase. The baseline again failed case 02 and case 03. These
+original results remain unchanged; V4 is a separately identified procedure.
+
+V4 adds a single native `Control+Option+F1` application-summary command **only**
+at the settled-heading checkpoint, after the measured 15-second interval and
+read-only confirmation that Safari already owns the focused document. This is
+an informational command without activation, navigation, or focus routing.
+Its actual phrases, offsets and timestamps are stored separately. A measured
+six-second no-input interval follows; this interval is not itself proof of
+audio silence. Read-only state must establish unchanged focus and geometry.
+Then the fresh F4 report receives its own new offsets and is evaluated against
+the original heading requirement. The next navigation remains ordinary Tab.
+
+For attribution, the F1 segment must identify Safari without heading or
+keyboard-focus language; the distinct F4 segment must affirmatively state
+"has keyboard focus" and satisfy the original heading matcher. Missing,
+ambiguous or negative language stays UNVERIFIED. F1 words cannot satisfy the
+F4 assertion. Independent media review must still examine the actual quiet
+boundary and recorded utterances. This procedure does not establish why the
+prior F4-only checkpoint was silent and does not erase that outcome. Apple
+documents F1 as application information and F4 as keyboard-focus information;
+no undocumented timeout or reset mechanism is assumed.
+
 The macOS job uses Guidepup's documented CI setup to configure screen-reader
 automation on its ephemeral runner. That vendor setup can update TCC permissions.
 Its output and the prior SIP status are retained. This repository supplies no
@@ -158,5 +186,6 @@ merge code, or deploy the website.
 - [Guidepup CI](https://www.guidepup.dev/docs/getting-started/ci-cd)
 - [Guidepup setup 0.29.3](https://github.com/guidepup/setup/blob/0.29.3/README.md)
 - [Guidepup VoiceOver API](https://www.guidepup.dev/docs/api/class-voiceover)
+- [Apple VoiceOver orientation commands](https://www.apple.com/uk/voiceover/info/guide/_1124.html)
 - [Safari developer settings](https://developer.apple.com/documentation/safari-developer-tools/developer-settings)
 - [ScreenCaptureKit recorder contract](RECORDER.md)

@@ -32,6 +32,7 @@ for (const name of ['result.json', 'events.jsonl', 'voiceover-safari.mov']) {
 const started = performance.now();
 const report = {
   schema: 'HHS355_NATIVE_VOICEOVER_RUN_V1', role: args.role,
+  reportingProcedure: 'V4: separate native application-summary prelude only at the settled-heading checkpoint, then fresh F4; prior F4-only runs remain distinct.',
   startedAtUTC: new Date().toISOString(), initialNavigationKey: INITIAL_KEY,
   scope: 'API-docs route; native Safari/VoiceOver only',
   cases: [], evidenceGates: {
@@ -148,6 +149,40 @@ async function key(value, activateSafari = true) {
 async function freshSpeech(label) {
   checkRecorder();
   const beforeFocus = await snapshot(`${label}-before-vo-f4`);
+  let applicationPrelude;
+  if (label === 'settled-heading') {
+    // One informational command, predeclared for this checkpoint on both refs.
+    // Its words never satisfy the heading assertion. No activation or movement.
+    if (beforeFocus.frontmostProcess?.value !== 'Safari' || !beforeFocus.documentHasFocus) {
+      throw new Error('Safari must already own the focused document before the informational prelude');
+    }
+    const offset = (await voiceOver.spokenPhraseLog()).length;
+    const began = event('vo-f1-application-summary-start', { logOffset:offset });
+    await bounded(voiceOver.press('Control+Option+F1', { capture:true }), 25_000, 'Native application summary');
+    const captured = await voiceOver.spokenPhraseLog();
+    const phrases = captured.slice(offset);
+    const completed = event('vo-f1-application-summary-captured', { logOffset:offset, logEnd:captured.length, phrases });
+    json('spoken-phrases.json', captured);
+    const boundaryStarted = performance.now();
+    await delay(6_000);
+    const boundaryEnded = event('inter-report-wait-ended', { waitElapsedMs:performance.now()-boundaryStarted });
+    const afterPrelude = await snapshot(`${label}-after-application-summary`);
+    const signature = state => JSON.stringify({
+      activeId:state.activeId, activeTag:state.activeTag, activeText:state.activeText,
+      documentHasFocus:state.documentHasFocus, headingRect:state.headingRect,
+      headerRect:state.headerRect, versionValue:state.versionValue,
+      serverValue:state.serverValue, frontmost:state.frontmostProcess?.value,
+    });
+    const summary = phrases.join(' ').trim();
+    applicationPrelude = {
+      startedAtUTC:began.atUTC, captureCompletedAtUTC:completed.atUTC,
+      waitEndedAtUTC:boundaryEnded.atUTC, logOffset:offset, logEnd:captured.length,
+      phrases, afterPrelude, sameFocusAndGeometry:signature(beforeFocus)===signature(afterPrelude),
+      distinctApplicationReport:/safari/i.test(summary) && !/heading|keyboard\s+focus/i.test(summary),
+      quietAudioVerification:'UNVERIFIED: the measured no-input interval is not itself an audio-silence detector.',
+    };
+    event('application-prelude-observation', applicationPrelude);
+  }
   const before = (await voiceOver.spokenPhraseLog()).length;
   const checkpoint = event('vo-f4-start', { label, logOffset: before });
   // In Guidepup 0.40.0 perform() activates VoiceOver itself. Send the same
@@ -156,7 +191,7 @@ async function freshSpeech(label) {
   const log = await voiceOver.spokenPhraseLog();
   const phrases = log.slice(before);
   const afterFocus = await snapshot(`${label}-after-vo-f4`);
-  const result = { label, startedAtUTC: checkpoint.atUTC, logOffset: before, logEnd: log.length, phrases, freshEvent: phrases.length > 0, hasNonEmptyCapture:phrases.some(s=>s.trim().length>0), beforeFocus, afterFocus };
+  const result = { label, startedAtUTC: checkpoint.atUTC, logOffset: before, logEnd: log.length, phrases, freshEvent: phrases.length > 0, hasNonEmptyCapture:phrases.some(s=>s.trim().length>0), beforeFocus, afterFocus, ...(applicationPrelude ? { applicationPrelude } : {}) };
   json('spoken-phrases.json', log);
   event('vo-f4-end', result);
   return result;
@@ -188,6 +223,14 @@ const normalizedSpeech = speech => speech.phrases.join(' ').toLowerCase()
 function speechCheck(speech, purpose, version) {
   if (!speech.freshEvent) return { status: 'UNVERIFIED', reason: 'No new captured speech event after this VO-F4.' };
   const text = normalizedSpeech(speech);
+  if (speech.applicationPrelude) {
+    const prelude = speech.applicationPrelude;
+    if (!prelude.distinctApplicationReport || !prelude.sameFocusAndGeometry ||
+        !/\bhas keyboard focus\b/.test(text) || /\b(?:not|never|no)\b/.test(text) ||
+        text===normalizedSpeech({phrases:prelude.phrases})) {
+      return { status:'UNVERIFIED', reason:'Fresh F4 attribution or unchanged focus across the separate application report was not established.', normalizedText:text };
+    }
+  }
   let matches = false;
   if (purpose === 'heading') matches = /open\s*api docs/.test(text) && /heading/.test(text);
   if (purpose === 'version') matches = /api version/.test(text) && text.includes(version);

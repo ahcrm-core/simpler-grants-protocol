@@ -1,0 +1,58 @@
+{
+  "schema": "HHS355_HARNESS_REVISION_V4",
+  "preparedAtUTC": "2026-11-19T01:46:37.070217+00:00",
+  "priorWorkflowCommit": "cdfa5b60f7f8ee6b34c18d254de02ae1abba805b",
+  "priorRun": "https://github.com/ahcrm-core/simpler-grants-protocol/actions/runs/44438496732",
+  "candidateV3": [
+    "PASS",
+    "PASS",
+    "UNVERIFIED",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS"
+  ],
+  "baselineV3": [
+    "PASS",
+    "FAIL",
+    "FAIL",
+    "ERROR",
+    "ERROR",
+    "ERROR",
+    "ERROR"
+  ],
+  "observedRemainingGap": "Case 03 retained heading focus and geometry but its fresh F4-only capture did not contain usable words. Earlier run 2 audio signal also showed silence in this interval; no causal reset or timeout mechanism is asserted.",
+  "reportingVariation": "After the original measured 15-second wait and read-only Safari/document focus check, send one untargeted native VO-F1 application report; retain its separate actual phrase segment, wait at least 6000 ms with no input, confirm unchanged focus and geometry, then request fresh VO-F4 with separate new offsets. Apply identically to baseline and candidate.",
+  "attributionGuards": [
+    "F1 actual segment identifies Safari without heading or keyboard-focus words",
+    "Read-only before and after F1 focus/geometry signatures must match",
+    "F4 own actual segment must differ from F1, affirm has keyboard focus, exclude negative or ambiguous wording, and match the unchanged OpenAPI docs heading requirement",
+    "The no-input wait is not an audio-silence detector; independent media review must inspect the boundary and actual utterances",
+    "Prior F4-only missing-speech outcomes remain unresolved and preserved under their original protocol"
+  ],
+  "unchanged": [
+    "Product baseline and candidate commits",
+    "Acceptance V1 bytes and seven expected behaviors",
+    "Native keyboard-only interaction with no DOM writes or injected repair",
+    "15-second minimum settling interval before the report",
+    "40-key navigation bound",
+    "Next navigation from the heading remains ordinary Tab",
+    "Independent media review gates",
+    "Exact first-run dependency lock",
+    "Native menu sequence from V3"
+  ],
+  "primaryCommandReference": "https://www.apple.com/uk/voiceover/info/guide/_1124.html",
+  "sourceFiles": [
+    {
+      "path": "orqelon-lab/hhs355/run.mjs",
+      "sha256": "c4dd849b0d5d2d428e935665896438d015b46726c5cfb887f0b31c4ea8dd05f1"
+    },
+    {
+      "path": "orqelon-lab/hhs355/README.md",
+      "sha256": "6ede9a37c981db7cc8d92a4206dc191dba51fec3cf4ea2d401f283c65739be8e"
+    }
+  ],
+  "acceptanceSHA256": "4b8bb6f32bfeba87b43195691bae9df3f6a67dc54321316257d1a95d53660727",
+  "nativeV4": "NOT_RUN",
+  "focusedStaticReview": "Independent reviewer found no sequencing or application-target blocker; affirmative F4 keyboard-focus guard tightened as requested. Syntax checked; no native outcome claimed before execution."
+}

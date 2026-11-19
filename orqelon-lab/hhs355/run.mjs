@@ -138,10 +138,11 @@ async function screen(label) {
   event('screen-frame', { label, file, sha256: sha(fs.readFileSync(path.join(OUT, file))) });
   return file;
 }
-async function key(value) {
+async function key(value, activateSafari = true) {
   checkRecorder();
-  event('native-key-start', { key: value });
-  await bounded(voiceOver.press(value, { application: MacOSApplications.Safari, capture: false }), 20_000, `Native key ${value}`);
+  event('native-key-start', { key: value, requestedTarget:activateSafari ? 'Safari' : 'current native menu' });
+  const options = activateSafari ? { application:MacOSApplications.Safari, capture:false } : { capture:false };
+  await bounded(voiceOver.press(value, options), 20_000, `Native key ${value}`);
   event('native-key-end', { key: value });
 }
 async function freshSpeech(label) {
@@ -211,7 +212,7 @@ async function isolatedCase(id, fn) {
     json('result.json', report);
     // A timed-out native operation is not cancelled by Promise.race. Do not
     // start later cases while that operation could still be delivering keys.
-    if (['HARNESS_ACTION_TIMEOUT', 'RECORDER_EXITED'].includes(error?.code)) throw error;
+    if (['HARNESS_ACTION_TIMEOUT', 'RECORDER_EXITED', 'NATIVE_MENU_UNRESOLVED'].includes(error?.code)) throw error;
   }
 }
 
@@ -342,7 +343,7 @@ async function cases() {
     event('settling-start');
     await delay(15_050);
     const elapsedMs = performance.now() - waitStarted;
-    event('settling-end', { elapsedMs });
+    event('settling-end', { waitElapsedMs: elapsedMs });
     const state = await snapshot('settled-heading');
     const speech = await freshSpeech('settled-heading');
     const frame = await screen('VO355-03-settled');
@@ -370,7 +371,23 @@ async function cases() {
   });
   await isolatedCase('VO355-06', async () => {
     await navigateTo('api-version-before-change', 'versionFocused', 'Shift+Tab');
-    await key('Space'); await key('ArrowDown'); await key('Enter');
+    // An open native select menu can block Safari AppleEvents. Dispatch the
+    // remaining native keys through System Events without reactivating Safari
+    // or observing its DOM until Enter closes the menu.
+    try {
+      await key('Space');
+      await key('ArrowDown', false);
+      await key('Enter', false);
+    } catch (error) {
+      event('native-menu-error', { error:errorText(error) });
+      if (['HARNESS_ACTION_TIMEOUT', 'RECORDER_EXITED'].includes(error?.code)) throw error;
+      try { await key('Escape', false); }
+      catch (cleanupError) {
+        event('native-menu-cleanup-error', { error:errorText(cleanupError) });
+        error.code = 'NATIVE_MENU_UNRESOLVED';
+      }
+      throw error;
+    }
     const state = await waitFor('redraw-0.4.0', s => readyFor(s, '0.4.0'));
     const frame = await screen('VO355-06-redraw');
     caseResult('VO355-06', { state, frame }, { selected:state.versionValue==='0.4.0', url:new URL(state.url).searchParams.get('version')==='0.4.0', rendered:state.renderedVersion.includes('0.4.0'), serverValue:state.serverValue==='/api/v0.4.0' });

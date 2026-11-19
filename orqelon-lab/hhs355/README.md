@@ -65,6 +65,27 @@ product refs, seven acceptance criteria, initial Option+Tab policy, 15-second
 settle interval, native-only interaction, navigation bounds, and media gates
 remain unchanged. No old run or empty phrase is reclassified as passing.
 
+## Disclosed native-menu correction after run 2
+
+[Run 44436512765](https://github.com/ahcrm-core/simpler-grants-protocol/actions/runs/44436512765)
+retains candidate PASS results for cases 01, 02, 04 and 05. Case 03 remains
+UNVERIFIED because its new F4 capture was empty. Cases 06 and 07 did not finish.
+The baseline kept keyboard focus on Skip after Enter, reproducing the case-02
+failure while Safari was frontmost and the document held focus.
+
+The run-2 candidate log establishes that Space opened API Version, then the
+attempt to activate Safari before ArrowDown timed out. ArrowDown was never
+dispatched and Enter never ran. Revision V3 keeps Safari-targeted Space, then
+sends native ArrowDown and Enter without a Safari activation or DOM query
+between them. Observations resume after Enter. A failed menu sequence is
+preserved, with bounded native Escape cleanup where the failed operation has
+ended; a native-operation timeout remains fatal.
+
+The F4-only reporting procedure and its empty-capture result policy are unchanged.
+V3 does not supply earlier words, another VoiceOver command's words, or synthesized
+speech to satisfy a missing F4 report. The settling-end event now stores the wait
+duration as `waitElapsedMs`, preserving the separate session-relative `elapsedMs`.
+
 The macOS job uses Guidepup's documented CI setup to configure screen-reader
 automation on its ephemeral runner. That vendor setup can update TCC permissions.
 Its output and the prior SIP status are retained. This repository supplies no

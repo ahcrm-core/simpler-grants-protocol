@@ -1,0 +1,45 @@
+{
+  "schema": "HHS355_HARNESS_REVISION_V3",
+  "preparedAtUTC": "2026-11-19T01:38:32.111582+00:00",
+  "priorWorkflowCommit": "2b3299189ecb19b132d0bdfd270c50b36b38db5d",
+  "priorRun": "https://github.com/ahcrm-core/simpler-grants-protocol/actions/runs/44436512765",
+  "candidateV2": [
+    "PASS",
+    "PASS",
+    "UNVERIFIED",
+    "PASS",
+    "PASS",
+    "ERROR",
+    "ERROR"
+  ],
+  "observedMenuBlocker": {
+    "SpaceCompletedAtUTC": "2026-11-19T01:32:40.729Z",
+    "ArrowDownAttemptStartedAtUTC": "2026-11-19T01:32:40.735Z",
+    "failure": "Safari activation AppleEvent timedout(-1712); nativeArrowDown never dispatched; Enter never attempted"
+  },
+  "correction": "TargetSafariforSpace, thennativeArrowDownandEnterwithoutinterveningSafariAppleEvents; resumeDOMobservationsafterEnter; preserveerrorsandboundedEscape cleanup except for pending-operation timeouts",
+  "speechPolicy": "F4-onlyunchanged; preserveemptycapturedphraseasUNVERIFIED; noF3prelude, logfileclear, stalephrase reuse or synthesizedspeech",
+  "diagnosticCorrection": "settling-end wait duration namedwaitElapsedMs so sessionelapsedMs isnot overwritten",
+  "unchanged": [
+    "Productbaselineandcandidatecommits",
+    "AcceptanceV1bytes",
+    "Sevenexpectedbehaviors",
+    "Nativekeyboard-onlyinput",
+    "15secondminimumwait",
+    "40navigationkeybound",
+    "Independentmediareviewgates",
+    "Exact first-run dependency lock"
+  ],
+  "sourceFiles": [
+    {
+      "path": "orqelon-lab/hhs355/run.mjs",
+      "sha256": "8cdda9a9c5e19e527a1f0e6a981f427ea86b0261555e237b571641d9d8a8cf27"
+    },
+    {
+      "path": "orqelon-lab/hhs355/README.md",
+      "sha256": "185a87eaac8123eba8b995f18d1400a8df33c7129306a009ccd87da6d1ffde12"
+    }
+  ],
+  "nativeV3": "NOT_RUN",
+  "focusedStaticReview": "Native menu sequence reviewed; Space included in cleanup scope; timeout remainsfatal; F4onlyunchanged"
+}

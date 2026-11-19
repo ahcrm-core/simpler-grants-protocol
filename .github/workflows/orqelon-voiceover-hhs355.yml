@@ -1,0 +1,316 @@
+name: ORQELON HHS355 native VoiceOver evidence
+
+on:
+  push:
+    branches:
+      - test/355-voiceover-20261118
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare-lock:
+    if: >-
+      github.repository == 'ahcrm-core/simpler-grants-protocol' &&
+      github.ref == 'refs/heads/test/355-voiceover-20261118'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      lock-artifact-id: ${{ steps.upload-lock.outputs.artifact-id }}
+      lock-sha256: ${{ steps.lock.outputs.sha256 }}
+    steps:
+      - name: Check out the exact harness revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Initialize preparation evidence
+        run: mkdir -p "$GITHUB_WORKSPACE/evidence"
+
+      - name: Set exact Node version
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+
+      - name: Resolve one shared test dependency lock without lifecycle scripts
+        id: lock
+        working-directory: orqelon-lab/hhs355
+        run: |
+          set -euo pipefail
+          {
+            date -u '+%Y-%m-%dT%H:%M:%SZ'
+            node --version
+            npm --version
+            printf 'Harness commit: %s\n' "$GITHUB_SHA"
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            sha256sum package.json package-lock.json
+          } 2>&1 | tee "$GITHUB_WORKSPACE/evidence/prepare-lock.log"
+          printf 'sha256=%s\n' "$(sha256sum package-lock.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload immutable shared lock
+        id: upload-lock
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hhs355-dependency-lock-${{ github.run_id }}-${{ github.run_attempt }}
+          path: orqelon-lab/hhs355/package-lock.json
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 1
+
+      - name: Preserve preparation stage outcomes
+        if: always()
+        env:
+          STAGE_OUTCOMES: ${{ toJSON(steps) }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+          printf '%s\n' "$STAGE_OUTCOMES" > "$GITHUB_WORKSPACE/evidence/prepare-stage-outcomes.json"
+
+      - name: Always retain preparation logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hhs355-lock-preparation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/
+            orqelon-lab/hhs355/package.json
+            orqelon-lab/hhs355/package-lock.json
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 1
+
+  native-voiceover:
+    needs: prepare-lock
+    if: >-
+      github.repository == 'ahcrm-core/simpler-grants-protocol' &&
+      github.ref == 'refs/heads/test/355-voiceover-20261118'
+    runs-on: macos-15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - role: baseline
+            repository: HHS/simpler-grants-protocol
+            commit: c47a82ba014b9ff449a91e7a8e13c7659747a872
+          - role: candidate
+            repository: ahcrm-core/simpler-grants-protocol
+            commit: c66cd3bda6923ae276676f96eae072e39a2d2752
+    steps:
+      - name: Check out the exact harness revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Initialize evidence on the disposable hosted runner
+        id: environment
+        env:
+          PRODUCT_REPOSITORY: ${{ matrix.repository }}
+          PRODUCT_COMMIT: ${{ matrix.commit }}
+          PRODUCT_ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+          {
+            test "$GITHUB_ACTIONS" = true
+            test "$RUNNER_ENVIRONMENT" = github-hosted
+            test "$RUNNER_OS" = macOS
+            date -u '+%Y-%m-%dT%H:%M:%SZ'
+            printf 'Role: %s\nProduct repository: %s\nProduct commit: %s\nHarness commit: %s\n' \
+              "$PRODUCT_ROLE" "$PRODUCT_REPOSITORY" "$PRODUCT_COMMIT" "$GITHUB_SHA"
+            printf 'Runner image: %s\nRunner image version: %s\nArchitecture: %s\n' \
+              "${ImageOS:-unavailable}" "${ImageVersion:-unavailable}" "$RUNNER_ARCH"
+            sw_vers
+            uname -m
+            locale
+            csrutil status
+            xcodebuild -version
+          } 2>&1 | tee "$GITHUB_WORKSPACE/evidence/runner-environment.log"
+
+      - name: Check out the frozen product source separately
+        id: product-checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.commit }}
+          path: product
+          persist-credentials: false
+
+      - name: Set exact Node version
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+
+      - name: Set exact product package manager
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+        with:
+          version: '11.20.0'
+          package_json_file: product/package.json
+          run_install: false
+          cache: false
+
+      - name: Download the same immutable test lock
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.prepare-lock.outputs.lock-artifact-id }}
+          path: orqelon-lab/hhs355
+          merge-multiple: true
+          digest-mismatch: error
+
+      - name: Verify lock and install test tools without dependency lifecycle scripts
+        id: test-dependencies
+        timeout-minutes: 4
+        working-directory: orqelon-lab/hhs355
+        env:
+          EXPECTED_LOCK_SHA256: ${{ needs.prepare-lock.outputs.lock-sha256 }}
+        run: |
+          set -euo pipefail
+          {
+            node --version
+            npm --version
+            pnpm --version
+            printf '%s  package-lock.json\n' "$EXPECTED_LOCK_SHA256" | shasum -a 256 -c -
+            shasum -a 256 package.json quality/acceptance-v1.json quality/ACCEPTANCE_V1.md
+            npm ci --ignore-scripts --no-audit --no-fund
+            npm ls @guidepup/guidepup @guidepup/setup --depth=0
+          } 2>&1 | tee "$GITHUB_WORKSPACE/evidence/test-dependencies.log"
+
+      - name: Install frozen product dependencies
+        id: product-install
+        timeout-minutes: 6
+        working-directory: product
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee "$GITHUB_WORKSPACE/evidence/product-install.log"
+
+      - name: Build the product exactly once
+        id: product-build
+        timeout-minutes: 8
+        working-directory: product
+        run: |
+          set -euo pipefail
+          pnpm --filter website run build 2>&1 | tee "$GITHUB_WORKSPACE/evidence/product-build.log"
+
+      - name: Run documented Guidepup hosted CI setup
+        id: guidepup-setup
+        timeout-minutes: 3
+        working-directory: orqelon-lab/hhs355
+        run: |
+          set -euo pipefail
+          {
+            test "$GITHUB_ACTIONS" = true
+            test "$RUNNER_ENVIRONMENT" = github-hosted
+            test "$RUNNER_OS" = macOS
+            csrutil status
+            printf '%s\n' 'Vendor Guidepup setup may configure automation permissions and TCC on this disposable hosted runner.'
+            printf '%s\n' 'No custom TCC edits, SIP-disabling commands, or permission workarounds after setup failure are performed by this workflow.'
+            ./node_modules/.bin/guidepup setup --ci
+          } 2>&1 | tee "$GITHUB_WORKSPACE/evidence/guidepup-setup.log"
+
+      - name: Install assets for the pinned Guidepup VoiceOver version
+        id: guidepup-assets
+        timeout-minutes: 3
+        working-directory: orqelon-lab/hhs355
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/guidepup install voiceover 2>&1 | tee "$GITHUB_WORKSPACE/evidence/guidepup-assets.log"
+
+      - name: Record and configure ordinary Safari and audio preferences
+        id: native-preferences
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          {
+            for preference in WebKitTabToLinksPreferenceKey IncludeDevelopMenu AllowJavaScriptFromAppleEvents; do
+              printf 'Before: %s\n' "$preference"
+              if defaults read com.apple.Safari "$preference"; then
+                :
+              else
+                printf 'Before value absent or unreadable; defaults exit status: %s\n' "$?"
+              fi
+            done
+            defaults write com.apple.Safari WebKitTabToLinksPreferenceKey -bool false
+            defaults write com.apple.Safari IncludeDevelopMenu -bool true
+            defaults write com.apple.Safari AllowJavaScriptFromAppleEvents -bool true
+            for preference in WebKitTabToLinksPreferenceKey IncludeDevelopMenu AllowJavaScriptFromAppleEvents; do
+              printf 'After: %s\n' "$preference"
+              defaults read com.apple.Safari "$preference"
+            done
+            printf '%s\n' 'Initial skip navigation is Option+Tab; the settled next-Tab assertion uses ordinary Tab.'
+            printf '%s\n' 'Audio settings before:'
+            osascript -e 'get volume settings'
+            osascript -e 'set volume output volume 70' -e 'set volume without output muted'
+            printf '%s\n' 'Audio settings after:'
+            osascript -e 'get volume settings'
+          } 2>&1 | tee "$GITHUB_WORKSPACE/evidence/native-preferences.log"
+
+      - name: Compile the real display and system audio recorder
+        id: recorder-compile
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          xcrun swiftc -swift-version 5 -parse-as-library \
+            -target "$(uname -m)-apple-macos15.0" \
+            -framework Foundation -framework AVFoundation \
+            -framework CoreGraphics -framework CoreMedia -framework ScreenCaptureKit \
+            orqelon-lab/hhs355/ScreenRecorder.swift \
+            -o orqelon-lab/hhs355/record-screen \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/recorder-compile.log"
+
+      - name: Run the same frozen native acceptance cases
+        id: native-cases
+        timeout-minutes: 8
+        env:
+          PRODUCT_ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          node orqelon-lab/hhs355/run.mjs \
+            --product-dir "$GITHUB_WORKSPACE/product" \
+            --output-dir "$GITHUB_WORKSPACE/evidence" \
+            --role "$PRODUCT_ROLE" \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/native-run.log"
+
+      - name: Preserve every stage outcome without changing its result
+        if: always()
+        env:
+          STAGE_OUTCOMES: ${{ toJSON(steps) }}
+          PRODUCT_ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+          printf '%s\n' "$STAGE_OUTCOMES" > "$GITHUB_WORKSPACE/evidence/workflow-stage-outcomes.json"
+          printf 'Role: %s\nHarness commit: %s\nRun: %s\nAttempt: %s\n' \
+            "$PRODUCT_ROLE" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" \
+            > "$GITHUB_WORKSPACE/evidence/workflow-identity.txt"
+          printf '%s\n' \
+            'Inspect recorded stage outcomes and harness results; an absent or failed native run is not a product pass.' \
+            'Screen/audio media and spoken words require the separate acceptance verification; logs alone do not establish audible recording.' \
+            'This run covers only the API-docs route on macOS/Safari/VoiceOver, not all routes or fresh cross-OS acceptance.' \
+            > "$GITHUB_WORKSPACE/evidence/evidence-boundaries.txt"
+
+      - name: Always retain evidence, exact build, and dependency locks
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hhs355-${{ matrix.role }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/
+            product/website/dist/client/
+            product/pnpm-lock.yaml
+            orqelon-lab/hhs355/package.json
+            orqelon-lab/hhs355/package-lock.json
+            orqelon-lab/hhs355/quality/acceptance-v1.json
+            orqelon-lab/hhs355/quality/ACCEPTANCE_V1.md
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 1

@@ -1,0 +1,115 @@
+{
+  "schema": "ORQELON_HHS355_NATIVE_VOICEOVER_ACCEPTANCE_V1",
+  "frozenAtUTC": "2026-11-19T01:08:20.394Z",
+  "status": "FROZEN_BEFORE_NEW_GUIDEPUP_HARNESS",
+  "author": "/root/hhs_current_candidate",
+  "independence": {
+    "newGuidepupHarnessInspected": false,
+    "existingProductPreviouslyInspected": true,
+    "disclosure": "Author previously inspected the pinned existing product and Chromium checker during a read-only repository audit. This freeze is independent of the new Guidepup harness; it is not a product-blind holdout.",
+    "applicationTestsBuildOrGitExecutedByAuthor": false
+  },
+  "sources": {
+    "issue": "https://github.com/HHS/simpler-grants-protocol/issues/355",
+    "requestedSequence": "https://github.com/HHS/simpler-grants-protocol/pull/1403#issuecomment-6896296532",
+    "proposedMethod": "https://github.com/HHS/simpler-grants-protocol/pull/1403#issuecomment-6994537911"
+  },
+  "inputs": {
+    "baseline": {
+      "repository": "HHS/simpler-grants-protocol",
+      "commit": "c47a82ba014b9ff449a91e7a8e13c7659747a872"
+    },
+    "candidate": {
+      "repository": "ahcrm-core/simpler-grants-protocol",
+      "commit": "c66cd3bda6923ae276676f96eae072e39a2d2752"
+    },
+    "route": "/protocol/api-docs/?version=0.5.0",
+    "runnerLabel": "macos-15",
+    "node": "22.23.4",
+    "pnpm": "11.20.0",
+    "guidepup": "0.40.0",
+    "guidepupSetup": "0.29.3",
+    "versionsPolicy": "Record actual macOS build, runner image, architecture, Safari and VoiceOver versions, locale, installed package versions and source/lock hashes. Missing or incompatible prerequisites are disclosed, not silently substituted."
+  },
+  "interactionPolicy": {
+    "browser": "Actual native Safari with actual running VoiceOver; not Playwright WebKit, an accessibility-tree mock, or synthesized narration.",
+    "allowed": "Native keyboard/VoiceOver commands; read-only DOM snapshots for readiness, activeElement, geometry and values; documented OS/browser/VoiceOver setup before cases, identical and recorded for both refs.",
+    "initialSkipReach": "Choose and record ordinary Tab or documented Option+Tab before the baseline. Record Safari keyboard/tab preference and Quick Nav state. Use the same choice on candidate; no hidden fallback after a failed assertion.",
+    "navigationBound": "At most 40 native navigation keypresses to reach a target; preserve the actual sequence and intermediate focus observations.",
+    "nextTab": "An ordinary Tab immediately after the settled heading observation; VO-F4 reporting may precede it but must not move focus.",
+    "prohibited": "No DOM focus(), click(), dispatchEvent(), selected-value assignment, direct render call, injected repair, forced accessibility name, or programmatic navigation to the target control. No expected text inserted into captured speech.",
+    "readiness": "Use document/Swagger rendering and actual version/value readiness, not the repaired Server accessible name, as a prerequisite.",
+    "speech": "At each speech checkpoint record a fresh VO-F4 current-keyboard-focus report after the relevant action/wait. Retain raw session speech and mark new-event offsets/timestamps; never satisfy a later checkpoint from an earlier utterance.",
+    "matching": "Meaningful name/role/value may ignore case, whitespace and spoken punctuation. Server or Servers is a meaningful purpose name. Literal version paths or unambiguous spoken equivalents are acceptable when separately evidenced; do not infer spoken words from DOM text. Ambiguous speech remains UNVERIFIED."
+  },
+  "cases": [
+    {
+      "id": "VO355-01",
+      "name": "Reach Skip by native keyboard",
+      "pass": "Actual native keyboard focus reaches the visible Skip to content link on the loaded API-docs page; key sequence and read-only activeElement evidence are preserved."
+    },
+    {
+      "id": "VO355-02",
+      "name": "Activate Skip",
+      "pass": "Enter from the focused link transfers actual keyboard focus to h1#_top inside main. A fresh VO-F4 report meaningfully identifies OpenAPI docs as the heading; preserve actual speech and DOM evidence."
+    },
+    {
+      "id": "VO355-03",
+      "name": "Settled heading",
+      "pass": "After at least 15000 ms of measured settling with no focus-moving or repairing action, h1#_top remains the active element, visible below the fixed header and within the viewport. A fresh VO-F4 report after the wait still identifies the heading.",
+      "geometry": "target top >= header bottom - 1 CSS px; target bottom <= viewport height; target height > 0; record measured values and elapsed time."
+    },
+    {
+      "id": "VO355-04",
+      "name": "Next ordinary Tab",
+      "pass": "The next ordinary Tab reaches #version-select inside main. A fresh VO-F4 report identifies API Version and its current selection; preserve actual focus and speech."
+    },
+    {
+      "id": "VO355-05",
+      "name": "Server at 0.5.0",
+      "pass": "Native keyboard navigation reaches the top-level Swagger Server selector. Its actual value is /api/v0.5.0, and a fresh VO-F4 report identifies the Server purpose and that value."
+    },
+    {
+      "id": "VO355-06",
+      "name": "Keyboard version change",
+      "pass": "Reach API Version using native keyboard input and select 0.4.0 using the native control. Read-only evidence establishes selected API Version 0.4.0, URL version=0.4.0, rendered Swagger version 0.4.0 and Server value /api/v0.4.0 after redraw."
+    },
+    {
+      "id": "VO355-07",
+      "name": "Server after redraw",
+      "pass": "Native keyboard navigation reaches the newly rendered top-level Server selector. A fresh VO-F4 report still identifies the Server purpose and /api/v0.4.0; preserve actual focus, value and speech."
+    }
+  ],
+  "evidenceGates": [
+    {
+      "id": "RECORDING-01",
+      "name": "Actual visible recording",
+      "pass": "Retain real screen recording of native Safari and the exercised sequence, with relevant reader state visible. Verify video metadata, duration and actual frames at the checkpoints. A speech text file, DOM snapshot, still-image sequence or fabricated demonstration is not this recording. Separate native clips are allowed only with their session/build identities explicitly preserved."
+    },
+    {
+      "id": "RECORDING-02",
+      "name": "Actual system audio and separate verification",
+      "pass": "Capture actual VoiceOver system audio in the recorded session and retain original media. Verify an audio stream and signal, then separately verify relevant recorded utterances with an identified capable reviewer/tool and timestamps. A non-silent stream or spokenPhraseLog alone does not prove the recorded words. Without that verification, audio content remains UNVERIFIED and full recording acceptance remains INCOMPLETE."
+    }
+  ],
+  "evidenceRecord": [
+    "Acceptance-file hash and frozen harness hash, source repository/ref/commit, clean/dirty state, lockfile hash and build command.",
+    "Per-file inventory and SHA-256 of actual served build before/after the run; preserve output identity rather than assuming an old build matches.",
+    "Actual runner/macOS/Safari/VoiceOver/Node/pnpm/Guidepup/setup versions, locale, keyboard preferences and native window readiness.",
+    "Timestamped native key sequence, read-only snapshots, measured 15-second interval, fresh speech-event boundaries and complete raw speech log.",
+    "All case results and failures, setup logs, media originals/hashes, visual checkpoints, audio-verification method/result and shutdown status."
+  ],
+  "resultPolicy": {
+    "sameAttack": "Run the same frozen assertions and navigation policy on baseline and candidate. Baseline failure is a hypothesis until actually reproduced; never manufacture FIRST RED.",
+    "functionalPass": "All seven cases must pass. Failure or a dependent case not reached prevents a seven-case PASS.",
+    "completeEvidence": "Full native recording acceptance requires functional PASS plus both recording gates. Speech-log verification is reported separately from audio listening.",
+    "failureClassification": "Record stage and observed evidence. Unsupported GUI/VoiceOver, permissions, install/build failure, unavailable audio or harness failure do not establish a product FIRST RED. Do not classify every timeout as infrastructure or every timeout as a product defect without evidence.",
+    "preserve": "Preserve every run and failure in a fresh output location. Safe later diagnostic steps may continue but cannot erase earlier failures. Any fixture/harness/criteria correction after execution is separately versioned and explained; V1 remains immutable.",
+    "baselineNotReproduced": "If baseline cannot execute or does not reproduce a product failure, report that limitation even if candidate observations pass."
+  },
+  "scopeLimits": [
+    "API-docs route only; not fresh proof for all 181 routes or full WCAG conformance.",
+    "Fresh macOS/Safari/VoiceOver evidence only; existing Windows/NVDA evidence retains its historical source/build/environment scope.",
+    "No automatic PR Ready transition, reviewer request, message, merge or deployment is authorized by this freeze."
+  ]
+}

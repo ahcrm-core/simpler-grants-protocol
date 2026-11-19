@@ -1,0 +1,65 @@
+{
+  "schema": "HHS355_PREPARATION_V1",
+  "frozenAtUTC": "2026-11-19T01:13:43.814365+00:00",
+  "sourceFiles": [
+    {
+      "path": ".github/workflows/orqelon-voiceover-hhs355.yml",
+      "bytes": 12858,
+      "sha256": "8ac5250397ba171c837e292d51bb0209ea1ed751394d7a5f2221d9b17068e2eb"
+    },
+    {
+      "path": "orqelon-lab/hhs355/README.md",
+      "bytes": 6553,
+      "sha256": "5153e4f972b532286b12b8580ab2746252469718cda58f26aa9fc50e63039e00"
+    },
+    {
+      "path": "orqelon-lab/hhs355/RECORDER.md",
+      "bytes": 7000,
+      "sha256": "ea23f1a0b3a648b97e5db9a86c3821c34c58f0a1650f692daf39876503517c27"
+    },
+    {
+      "path": "orqelon-lab/hhs355/ScreenRecorder.swift",
+      "bytes": 15789,
+      "sha256": "181c0bffd0ec973265d0e67bb9370428f18994af1a411a93bcf3751b09e6bd4b"
+    },
+    {
+      "path": "orqelon-lab/hhs355/package.json",
+      "bytes": 354,
+      "sha256": "446419b3c1c60a30b6966612e7f9a94875d720a62b7017f5de41cc33c976a922"
+    },
+    {
+      "path": "orqelon-lab/hhs355/quality/ACCEPTANCE_V1.md",
+      "bytes": 4337,
+      "sha256": "7128209b6da12b70a6bb1414f08e632e9e79c58e9cd8ffe756547a8fb2d6b866"
+    },
+    {
+      "path": "orqelon-lab/hhs355/quality/acceptance-v1.json",
+      "bytes": 9142,
+      "sha256": "4b8bb6f32bfeba87b43195691bae9df3f6a67dc54321316257d1a95d53660727"
+    },
+    {
+      "path": "orqelon-lab/hhs355/run.mjs",
+      "bytes": 25742,
+      "sha256": "b15686c526754b7ed496751580986b3a48763db30c6efe93285dbc2fee7e5292"
+    }
+  ],
+  "localChecks": {
+    "nodeSyntax": "PASS",
+    "yamlParse": "PASS",
+    "packageJSONParse": "PASS",
+    "acceptanceHash": "UNCHANGED",
+    "focusedIndependentStaticReview": "SPECIFIC_FINDINGS_FIXED_AND_RECHECKED"
+  },
+  "notExecutedLocally": [
+    "macOS compilation",
+    "native Safari",
+    "VoiceOver",
+    "screen recording",
+    "audio review",
+    "product build"
+  ],
+  "plannedBranch": "test/355-voiceover-20261118",
+  "productCandidate": "c66cd3bda6923ae276676f96eae072e39a2d2752",
+  "productBaseline": "c47a82ba014b9ff449a91e7a8e13c7659747a872",
+  "acceptanceStatus": "NOT_RUN"
+}

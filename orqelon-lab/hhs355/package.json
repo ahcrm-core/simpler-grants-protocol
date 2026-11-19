@@ -1,0 +1,14 @@
+{
+  "name": "orqelon-hhs355-native-voiceover-acceptance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated native Safari and VoiceOver acceptance evidence for HHS issue 355.",
+  "type": "module",
+  "engines": {
+    "node": "22.23.4"
+  },
+  "devDependencies": {
+    "@guidepup/guidepup": "0.40.0",
+    "@guidepup/setup": "0.29.3"
+  }
+}
